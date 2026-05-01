@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(brew --version)",
+      "Bash(git --version)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --yes)",
+      "Read(//Users/sharonspisak/Desktop/**)",
+      "Bash(npx create-next-app@latest foodie-temp --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --yes)",
+      "Bash(rsync -a \"/Users/sharonspisak/Desktop/foodie-temp/\" \"/Users/sharonspisak/Desktop/Foodie map app/\")",
+      "Bash(sed -i '' 's/\"name\": \"foodie-temp\"/\"name\": \"foodie-app\"/' \"/Users/sharonspisak/Desktop/Foodie map app/package.json\")",
+      "Bash(rm -rf \"/Users/sharonspisak/Desktop/foodie-temp\")",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(curl -sL \"https://docs.google.com/spreadsheets/d/e/2PACX-1vSW9Kpux0_KJ3Yod2DX3orEPFADfh4LN0AJBtP-6BogcJjBZ416FPqbUF6PCLDa_-9bEiUB_o11eP9A/pub?gid=0&single=true&output=csv\")",
+      "Bash(npm install *)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(curl -sI \"https://maps.app.goo.gl/ZtwVJLafYi1bZCnH7\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(curl -s \"https://foodie-app-umber-rho.vercel.app/\")",
+      "Bash(echo \"---STATUS: $?\")",
+      "Bash(git commit -m 'Add debug endpoint to diagnose env var on Vercel *)",
+      "Bash(git push *)",
+      "Bash(rm -rf \"/Users/sharonspisak/Desktop/Foodie map app/src/app/api\")",
+      "Bash(git commit -m 'Remove debug endpoint *)"
+    ]
+  }
+}
