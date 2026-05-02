@@ -13,6 +13,7 @@ export interface Place {
   rating: number | null;
   note: string;
   googleMapsUrl: string;
+  photoUrl: string;
   lat: number | null;
   lng: number | null;
 }
@@ -44,6 +45,20 @@ export function intentLabel(intent: string): string {
 
 function parseBool(val: string): boolean {
   return ["yes", "true"].includes(val?.trim().toLowerCase());
+}
+
+/**
+ * Convert a Google Drive share link to a direct image URL.
+ * Passes any other URL through unchanged.
+ */
+function toDirectImageUrl(url: string): string {
+  if (!url) return "";
+  // https://drive.google.com/file/d/FILE_ID/view?... → direct image
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (driveMatch) {
+    return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+  }
+  return url;
 }
 
 /**
@@ -105,6 +120,7 @@ export async function getPlaces(): Promise<Place[]> {
       rating: row.rating?.trim() ? parseFloat(row.rating) : null,
       note: row.note?.trim() ?? "",
       googleMapsUrl: row.google_maps_url?.trim() ?? "",
+      photoUrl: toDirectImageUrl(row.photo_url?.trim() ?? ""),
     }))
     .filter((p) => p.name);
 

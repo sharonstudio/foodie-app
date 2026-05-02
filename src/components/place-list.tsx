@@ -115,7 +115,7 @@ export default function PlaceList({ places }: { places: Place[] }) {
                 id="visited-heading"
                 className="text-xs font-semibold uppercase tracking-widest text-stone-400"
               >
-                Sharon&apos;s been here
+                ✓ Been here
               </h3>
               <ul className="space-y-2">
                 {visited.map((place) => (
@@ -133,7 +133,7 @@ export default function PlaceList({ places }: { places: Place[] }) {
                 id="list-heading"
                 className="text-xs font-semibold uppercase tracking-widest text-stone-400"
               >
-                Also on the list
+                🧡 Bucket list
               </h3>
               <ul className="space-y-2">
                 {unvisited.map((place) => (
@@ -162,8 +162,18 @@ export default function PlaceList({ places }: { places: Place[] }) {
 
 function PlaceCard({ place }: { place: Place }) {
   return (
-    <article className="rounded-xl border border-stone-100 bg-white p-4 transition-colors hover:border-stone-300">
-      <div className="flex items-start justify-between gap-3">
+    <article className="overflow-hidden rounded-xl border border-stone-100 bg-white transition-colors hover:border-stone-300">
+      {/* Photo — only shown for visited places that have one */}
+      {place.visited && place.photoUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={place.photoUrl}
+          alt={`Photo of ${place.name}`}
+          className="h-48 w-full object-cover"
+        />
+      )}
+
+      <div className="flex items-start justify-between gap-3 p-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h4 className="font-semibold text-stone-900">{place.name}</h4>
@@ -190,14 +200,20 @@ function PlaceCard({ place }: { place: Place }) {
         </div>
 
         <div className="shrink-0 text-right">
-          {place.visited && place.rating !== null ? (
-            <div className="flex flex-col items-end">
-              <span className="text-lg font-bold text-stone-900">{place.rating}</span>
-              <span className="text-[10px] uppercase tracking-wide text-stone-400">Beli</span>
-            </div>
+          {place.visited ? (
+            place.rating !== null ? (
+              <div className="flex flex-col items-end">
+                <span className="text-lg font-bold text-stone-900">{place.rating}</span>
+                <span className="text-[10px] uppercase tracking-wide text-stone-400">Beli</span>
+              </div>
+            ) : (
+              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-stone-500">
+                Visited
+              </span>
+            )
           ) : (
-            <span className="text-[10px] uppercase tracking-wide text-stone-300">
-              Not tried yet
+            <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] uppercase tracking-wide text-orange-400">
+              Bucket list
             </span>
           )}
         </div>
