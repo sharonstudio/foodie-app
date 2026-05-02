@@ -24,7 +24,8 @@
       "Bash(git push *)",
       "Bash(rm -rf \"/Users/sharonspisak/Desktop/Foodie map app/src/app/api\")",
       "Bash(git commit -m 'Remove debug endpoint *)",
-      "Bash(git commit -m 'Add photos and visited/bucket list distinction *)"
+      "Bash(git commit -m 'Add photos and visited/bucket list distinction *)",
+      "Bash(git commit -m 'Add toilet, price, space fields with filters *)"
     ]
   }
 }

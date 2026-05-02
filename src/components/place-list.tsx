@@ -2,9 +2,16 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Place, getMealIntents, getCities, intentLabel } from "@/lib/places";
+import {
+  Place,
+  getMealIntents,
+  getCities,
+  getPrices,
+  getSpaces,
+  intentLabel,
+  spaceLabel,
+} from "@/lib/places";
 
-// Load map only on the client — Leaflet requires window
 const MapView = dynamic(() => import("./map-view"), { ssr: false });
 
 // ---------------------------------------------------------------------------
@@ -14,15 +21,21 @@ const MapView = dynamic(() => import("./map-view"), { ssr: false });
 export default function PlaceList({ places }: { places: Place[] }) {
   const [activeCity, setActiveCity] = useState<string | null>(null);
   const [activeMeal, setActiveMeal] = useState<string | null>(null);
+  const [activePrice, setActivePrice] = useState<string | null>(null);
+  const [activeSpace, setActiveSpace] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "map">("list");
 
   const cities = getCities(places);
   const mealIntents = getMealIntents(places);
+  const prices = getPrices(places);
+  const spaces = getSpaces(places);
 
   const filtered = places.filter((p) => {
-    const cityMatch = !activeCity || p.city === activeCity;
-    const mealMatch = !activeMeal || p.mealIntents.includes(activeMeal);
-    return cityMatch && mealMatch;
+    if (activeCity && p.city !== activeCity) return false;
+    if (activeMeal && !p.mealIntents.includes(activeMeal)) return false;
+    if (activePrice && p.price !== activePrice) return false;
+    if (activeSpace && p.space.toLowerCase() !== activeSpace) return false;
+    return true;
   });
 
   const visited = [...filtered.filter((p) => p.visited)].sort(
@@ -31,49 +44,66 @@ export default function PlaceList({ places }: { places: Place[] }) {
   const unvisited = filtered.filter((p) => !p.visited);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* ------------------------------------------------------------------ */}
-      {/* Filters + view toggle row                                            */}
+      {/* Filters + view toggle                                                */}
       {/* ------------------------------------------------------------------ */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
-          {/* City chips — only when multiple cities */}
+
+          {/* City */}
           {cities.length > 1 && (
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by city">
+            <FilterRow label="City">
               {cities.map((city) => (
-                <button
+                <Chip
                   key={city}
+                  label={city}
+                  active={activeCity === city}
                   onClick={() => setActiveCity(activeCity === city ? null : city)}
-                  aria-pressed={activeCity === city}
-                  className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
-                    activeCity === city
-                      ? "border-stone-900 bg-stone-900 text-white"
-                      : "border-stone-200 bg-white text-stone-600 hover:border-stone-400"
-                  }`}
-                >
-                  {city}
-                </button>
+                />
               ))}
-            </div>
+            </FilterRow>
           )}
 
-          {/* Meal intent chips */}
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by meal type">
+          {/* Meal intent */}
+          <FilterRow label="I'm looking for">
             {mealIntents.map((intent) => (
-              <button
+              <Chip
                 key={intent}
+                label={intentLabel(intent)}
+                active={activeMeal === intent}
                 onClick={() => setActiveMeal(activeMeal === intent ? null : intent)}
-                aria-pressed={activeMeal === intent}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${
-                  activeMeal === intent
-                    ? "border-stone-900 bg-stone-900 text-white"
-                    : "border-stone-200 bg-white text-stone-700 hover:border-stone-400"
-                }`}
-              >
-                {intentLabel(intent)}
-              </button>
+              />
             ))}
-          </div>
+          </FilterRow>
+
+          {/* Price */}
+          {prices.length > 0 && (
+            <FilterRow label="Price">
+              {prices.map((p) => (
+                <Chip
+                  key={p}
+                  label={p}
+                  active={activePrice === p}
+                  onClick={() => setActivePrice(activePrice === p ? null : p)}
+                />
+              ))}
+            </FilterRow>
+          )}
+
+          {/* Space */}
+          {spaces.length > 0 && (
+            <FilterRow label="Space">
+              {spaces.map((s) => (
+                <Chip
+                  key={s}
+                  label={spaceLabel(s)}
+                  active={activeSpace === s}
+                  onClick={() => setActiveSpace(activeSpace === s ? null : s)}
+                />
+              ))}
+            </FilterRow>
+          )}
         </div>
 
         {/* List / Map toggle */}
@@ -88,9 +118,7 @@ export default function PlaceList({ places }: { places: Place[] }) {
               onClick={() => setView(v)}
               aria-pressed={view === v}
               className={`px-4 py-1.5 capitalize transition-colors ${
-                view === v
-                  ? "bg-stone-900 text-white"
-                  : "text-stone-500 hover:text-stone-800"
+                view === v ? "bg-stone-900 text-white" : "text-stone-500 hover:text-stone-800"
               }`}
             >
               {v === "list" ? "List" : "Map"}
@@ -157,13 +185,52 @@ export default function PlaceList({ places }: { places: Place[] }) {
 }
 
 // ---------------------------------------------------------------------------
+// Filter row + chip helpers
+// ---------------------------------------------------------------------------
+
+function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-28 shrink-0 text-xs text-stone-400">{label}</span>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={label}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Chip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-full border px-3 py-1 text-sm font-medium transition-all ${
+        active
+          ? "border-stone-900 bg-stone-900 text-white"
+          : "border-stone-200 bg-white text-stone-700 hover:border-stone-400"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Place card
 // ---------------------------------------------------------------------------
 
 function PlaceCard({ place }: { place: Place }) {
   return (
     <article className="overflow-hidden rounded-xl border border-stone-100 bg-white transition-colors hover:border-stone-300">
-      {/* Photo — only shown for visited places that have one */}
+      {/* Photo */}
       {place.visited && place.photoUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -175,6 +242,7 @@ function PlaceCard({ place }: { place: Place }) {
 
       <div className="flex items-start justify-between gap-3 p-4">
         <div className="min-w-0 flex-1">
+          {/* Name + location */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h4 className="font-semibold text-stone-900">{place.name}</h4>
             {place.neighborhood && (
@@ -184,9 +252,39 @@ function PlaceCard({ place }: { place: Place }) {
               <span className="text-xs text-stone-300">· {place.city}</span>
             )}
           </div>
-          {place.note && (
-            <p className="mt-1 text-sm leading-snug text-stone-500">{place.note}</p>
+
+          {/* Meta pills: price · space · toilet */}
+          {(place.price || place.space || place.toilet !== null) && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {place.price && (
+                <span className="rounded-full bg-stone-50 border border-stone-100 px-2 py-0.5 text-xs text-stone-500">
+                  {place.price}
+                </span>
+              )}
+              {place.space && (
+                <span className="rounded-full bg-stone-50 border border-stone-100 px-2 py-0.5 text-xs text-stone-500">
+                  {spaceLabel(place.space)}
+                </span>
+              )}
+              {place.toilet === true && (
+                <span className="rounded-full bg-stone-50 border border-stone-100 px-2 py-0.5 text-xs text-stone-500">
+                  🚻 Toilet
+                </span>
+              )}
+              {place.toilet === false && (
+                <span className="rounded-full bg-stone-50 border border-stone-100 px-2 py-0.5 text-xs text-stone-400 line-through">
+                  No toilet
+                </span>
+              )}
+            </div>
           )}
+
+          {/* Note */}
+          {place.note && (
+            <p className="mt-2 text-sm leading-snug text-stone-500">{place.note}</p>
+          )}
+
+          {/* Maps link */}
           {place.googleMapsUrl && (
             <a
               href={place.googleMapsUrl}
@@ -199,6 +297,7 @@ function PlaceCard({ place }: { place: Place }) {
           )}
         </div>
 
+        {/* Rating / status badge */}
         <div className="shrink-0 text-right">
           {place.visited ? (
             place.rating !== null ? (

@@ -14,6 +14,9 @@ export interface Place {
   note: string;
   googleMapsUrl: string;
   photoUrl: string;
+  toilet: boolean | null;  // null = not specified
+  price: string;           // "$" | "$$" | "$$$" | ""
+  space: string;           // "Takeaway" | "Small" | "Large" | ""
   lat: number | null;
   lng: number | null;
 }
@@ -39,6 +42,17 @@ export function intentLabel(intent: string): string {
   return `${emoji} ${label}`;
 }
 
+// Space display labels
+export const SPACE_LABELS: Record<string, string> = {
+  takeaway: "Takeaway",
+  small: "Small space",
+  large: "Great for groups",
+};
+
+export function spaceLabel(space: string): string {
+  return SPACE_LABELS[space.toLowerCase()] ?? space;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -47,13 +61,17 @@ function parseBool(val: string): boolean {
   return ["yes", "true"].includes(val?.trim().toLowerCase());
 }
 
+function parseToilet(val: string): boolean | null {
+  if (!val?.trim()) return null;
+  return parseBool(val);
+}
+
 /**
  * Convert a Google Drive share link to a direct image URL.
  * Passes any other URL through unchanged.
  */
 function toDirectImageUrl(url: string): string {
   if (!url) return "";
-  // https://drive.google.com/file/d/FILE_ID/view?... → direct image
   const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
   if (driveMatch) {
     return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
@@ -62,8 +80,8 @@ function toDirectImageUrl(url: string): string {
 }
 
 /**
- * Follow a Google Maps short URL and extract the precise place coordinates
- * from the redirected URL. Cached for 24 h — place coordinates never change.
+ * Follow a Google Maps short URL and extract the precise place coordinates.
+ * Cached for 24 h — place coordinates never change.
  */
 async function resolveCoordinates(
   url: string
@@ -72,18 +90,13 @@ async function resolveCoordinates(
   try {
     const res = await fetch(url, {
       redirect: "follow",
-      next: { revalidate: 86400 }, // 24 h cache
+      next: { revalidate: 86400 },
     });
     const finalUrl = res.url;
-
-    // Google encodes precise place coords as !3d{lat}!4d{lng}
     const precise = finalUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
     if (precise) return { lat: parseFloat(precise[1]), lng: parseFloat(precise[2]) };
-
-    // Fallback: map-centre coords from @lat,lng
     const centre = finalUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
     if (centre) return { lat: parseFloat(centre[1]), lng: parseFloat(centre[2]) };
-
     return null;
   } catch {
     return null;
@@ -121,10 +134,12 @@ export async function getPlaces(): Promise<Place[]> {
       note: row.note?.trim() ?? "",
       googleMapsUrl: row.google_maps_url?.trim() ?? "",
       photoUrl: toDirectImageUrl(row.photo_url?.trim() ?? ""),
+      toilet: parseToilet(row.toilet ?? ""),
+      price: row.price?.trim() ?? "",
+      space: row.space?.trim() ?? "",
     }))
     .filter((p) => p.name);
 
-  // Resolve coordinates in parallel — cached per URL so only new places hit the network
   const coords = await Promise.all(
     active.map((p) => resolveCoordinates(p.googleMapsUrl))
   );
@@ -149,4 +164,16 @@ export function getMealIntents(places: Place[]): string[] {
   const preferred = ["coffee", "brunch", "lunch", "dinner"];
   const rest = [...new Set(all)].filter((i) => !preferred.includes(i)).sort();
   return [...preferred.filter((i) => all.includes(i)), ...rest];
+}
+
+export function getPrices(places: Place[]): string[] {
+  const order = ["$", "$$", "$$$"];
+  const found = [...new Set(places.map((p) => p.price).filter(Boolean))];
+  return order.filter((p) => found.includes(p));
+}
+
+export function getSpaces(places: Place[]): string[] {
+  const order = ["takeaway", "small", "large"];
+  const found = [...new Set(places.map((p) => p.space.toLowerCase()).filter(Boolean))];
+  return order.filter((s) => found.includes(s));
 }
