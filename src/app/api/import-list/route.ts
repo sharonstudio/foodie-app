@@ -1,10 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as https from "https";
 
-const HEADERS = {
+const FETCH_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
   Referer: "https://www.google.com/maps",
 };
+
+// ---------------------------------------------------------------------------
+// Get the first redirect Location header using Node's https module.
+// fetch() follows all redirects and loses intermediate URLs;
+// Google's short URLs do a client-side redirect that fetch never sees.
+// Using curl's User-Agent triggers a proper HTTP 302 from Google.
+// ---------------------------------------------------------------------------
+
+function getRedirectLocation(rawUrl: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    try {
+      const u = new URL(rawUrl);
+      const req = https.get(
+        { hostname: u.hostname, path: u.pathname + u.search, headers: { "User-Agent": "curl/7.79.1" } },
+        (res) => { resolve(res.headers.location ?? null); res.destroy(); }
+      );
+      req.setTimeout(8000, () => { req.destroy(); resolve(null); });
+      req.on("error", () => resolve(null));
+    } catch {
+      resolve(null);
+    }
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Extract list ID from any Google Maps list URL
@@ -15,16 +39,15 @@ async function extractListId(inputUrl: string): Promise<string | null> {
   const directMatch = inputUrl.match(/placelists\/list\/([a-zA-Z0-9_-]+)/);
   if (directMatch) return directMatch[1];
 
-  // Short URL (maps.app.goo.gl) or @/data= URL — follow redirect
-  try {
-    const res = await fetch(inputUrl, { redirect: "follow", headers: HEADERS });
-    const finalUrl = res.url;
+  // Already a @/data= URL with the list ID embedded
+  const dataMatch = inputUrl.match(/!2s([a-zA-Z0-9_+/=-]{20,})!3e3/);
+  if (dataMatch) return dataMatch[1];
 
-    // Pattern in redirected URL: !2sLIST_ID!3e3
-    const match = finalUrl.match(/!2s([a-zA-Z0-9_+/=-]{20,})!3e3/);
-    if (match) return match[1];
-  } catch {
-    return null;
+  // Short URL (maps.app.goo.gl) — get the first redirect Location header
+  const location = await getRedirectLocation(inputUrl);
+  if (location) {
+    const locationMatch = location.match(/!2s([a-zA-Z0-9_+/=-]{20,})!3e3/);
+    if (locationMatch) return locationMatch[1];
   }
 
   return null;

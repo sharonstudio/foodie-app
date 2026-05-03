@@ -32,7 +32,8 @@
       "Bash(curl -sL \"https://www.google.com/maps/preview/entitylist/getlist?authuser=0&hl=en&gl=en&pb=%211m4%211sR6R6sQz3JT1dq3_l2dIdK5GIzleicA%212e1%213m1%211e1%212e2%213e2%214i500%216m3%211sjKL3aa_8GovywPAPvdqC2As%2115i204459%2128e2%2116b1\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" -H \"Referer: https://www.google.com/maps\")",
       "Bash(python3 -c ' *)",
       "Read(//tmp/**)",
-      "Bash(git commit -m 'Add Google Maps list import tool at /import *)"
+      "Bash(git commit -m 'Add Google Maps list import tool at /import *)",
+      "Bash(git commit -m 'Fix import: use Node https module to resolve Google Maps short URL redirect *)"
     ]
   }
 }
