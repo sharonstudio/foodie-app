@@ -25,7 +25,14 @@
       "Bash(rm -rf \"/Users/sharonspisak/Desktop/Foodie map app/src/app/api\")",
       "Bash(git commit -m 'Remove debug endpoint *)",
       "Bash(git commit -m 'Add photos and visited/bucket list distinction *)",
-      "Bash(git commit -m 'Add toilet, price, space fields with filters *)"
+      "Bash(git commit -m 'Add toilet, price, space fields with filters *)",
+      "Bash(curl -sL \"https://maps.app.goo.gl/tZWbx7ZAfAaWqYvZ6\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\")",
+      "Bash(curl -sI \"https://maps.app.goo.gl/tZWbx7ZAfAaWqYvZ6\" -A \"Mozilla/5.0\")",
+      "Bash(curl -sL \"https://www.google.com/maps/@/data=!3m1!4b1!4m3!11m2!2sR6R6sQz3JT1dq3_l2dIdK5GIzleicA!3e3?entry=tts\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\")",
+      "Bash(curl -sL \"https://www.google.com/maps/preview/entitylist/getlist?authuser=0&hl=en&gl=en&pb=%211m4%211sR6R6sQz3JT1dq3_l2dIdK5GIzleicA%212e1%213m1%211e1%212e2%213e2%214i500%216m3%211sjKL3aa_8GovywPAPvdqC2As%2115i204459%2128e2%2116b1\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" -H \"Referer: https://www.google.com/maps\")",
+      "Bash(python3 -c ' *)",
+      "Read(//tmp/**)",
+      "Bash(git commit -m 'Add Google Maps list import tool at /import *)"
     ]
   }
 }
