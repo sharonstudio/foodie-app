@@ -73,7 +73,7 @@ async function fetchList(
   );
   const url = `https://www.google.com/maps/preview/entitylist/getlist?authuser=0&hl=en&gl=en&pb=${pb}`;
 
-  const res = await fetch(url, { headers: HEADERS, cache: "no-store" });
+  const res = await fetch(url, { headers: FETCH_HEADERS, cache: "no-store" });
   const text = await res.text();
 
   // Strip Google's anti-XSS prefix: )]}'\n
@@ -111,17 +111,25 @@ async function fetchList(
 // ---------------------------------------------------------------------------
 
 export async function POST(req: NextRequest) {
-  const { url } = await req.json();
-  if (!url) return NextResponse.json({ error: "No URL provided" }, { status: 400 });
+  try {
+    const { url } = await req.json();
+    if (!url) return NextResponse.json({ error: "No URL provided" }, { status: 400 });
 
-  const listId = await extractListId(url);
-  if (!listId) {
+    const listId = await extractListId(url);
+    if (!listId) {
+      return NextResponse.json(
+        { error: "Could not find a list ID in that URL. Make sure the list is public." },
+        { status: 400 }
+      );
+    }
+
+    const { listName, places } = await fetchList(listId);
+    return NextResponse.json({ listName, places });
+  } catch (e) {
+    console.error("Import error:", e);
     return NextResponse.json(
-      { error: "Could not find a list ID in that URL. Make sure the list is public." },
-      { status: 400 }
+      { error: `Import failed: ${e instanceof Error ? e.message : String(e)}` },
+      { status: 500 }
     );
   }
-
-  const { listName, places } = await fetchList(listId);
-  return NextResponse.json({ listName, places });
 }

@@ -33,7 +33,8 @@
       "Bash(python3 -c ' *)",
       "Read(//tmp/**)",
       "Bash(git commit -m 'Add Google Maps list import tool at /import *)",
-      "Bash(git commit -m 'Fix import: use Node https module to resolve Google Maps short URL redirect *)"
+      "Bash(git commit -m 'Fix import: use Node https module to resolve Google Maps short URL redirect *)",
+      "Bash(git commit -m 'Fix undefined HEADERS reference in import route *)"
     ]
   }
 }
