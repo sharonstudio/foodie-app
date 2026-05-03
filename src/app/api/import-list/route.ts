@@ -72,20 +72,22 @@ interface ImportedPlace {
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`;
+    // accept-language=en forces English names; zoom=10 targets city level
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&accept-language=en`;
     const res = await fetch(url, {
       headers: { "User-Agent": "FoodieRunsTheWorld/1.0" },
       next: { revalidate: 86400 },
     });
     const data = await res.json();
     const addr = data.address ?? {};
-    return addr.city ?? addr.town ?? addr.village ?? addr.county ?? "";
+    // city > municipality > town — intentionally stop here, never go to village/suburb
+    return addr.city ?? addr.municipality ?? addr.town ?? "";
   } catch {
     return "";
   }
 }
 
-// Round to 0.5° (~55 km) to bucket nearby places and avoid redundant calls
+// Round to 0.5° (~55 km) — just for grouping; we geocode actual place coordinates, not the bucket centre
 function bucket(lat: number, lng: number) {
   return `${Math.round(lat * 2) / 2},${Math.round(lng * 2) / 2}`;
 }
@@ -124,14 +126,18 @@ async function fetchList(
     })
     .filter((p) => p.name);
 
-  // Reverse geocode — one Nominatim call per unique ~55 km bucket
+  // Reverse geocode — one Nominatim call per unique ~55 km bucket.
+  // Use the FIRST actual place's coordinates in each bucket, not the bucket centre.
   const bucketCache = new Map<string, string>();
-  const uniqueBuckets = [
-    ...new Set(parsed.filter(p => p.lat && p.lng).map(p => bucket(p.lat!, p.lng!))),
-  ];
+  const bucketToCoord = new Map<string, { lat: number; lng: number }>();
+  for (const p of parsed) {
+    if (p.lat && p.lng) {
+      const b = bucket(p.lat, p.lng);
+      if (!bucketToCoord.has(b)) bucketToCoord.set(b, { lat: p.lat, lng: p.lng });
+    }
+  }
   await Promise.all(
-    uniqueBuckets.map(async (b) => {
-      const [lat, lng] = b.split(",").map(Number);
+    [...bucketToCoord.entries()].map(async ([b, { lat, lng }]) => {
       bucketCache.set(b, await reverseGeocode(lat, lng));
     })
   );
