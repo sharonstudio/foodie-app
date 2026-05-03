@@ -34,7 +34,8 @@
       "Read(//tmp/**)",
       "Bash(git commit -m 'Add Google Maps list import tool at /import *)",
       "Bash(git commit -m 'Fix import: use Node https module to resolve Google Maps short URL redirect *)",
-      "Bash(git commit -m 'Fix undefined HEADERS reference in import route *)"
+      "Bash(git commit -m 'Fix undefined HEADERS reference in import route *)",
+      "Bash(git commit -m 'Fix import column order and add reverse geocoding for city *)"
     ]
   }
 }

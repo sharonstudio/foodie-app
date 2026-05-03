@@ -59,10 +59,35 @@ async function extractListId(inputUrl: string): Promise<string | null> {
 
 interface ImportedPlace {
   name: string;
+  city: string;
   note: string;
   lat: number | null;
   lng: number | null;
   googleMapsUrl: string;
+}
+
+// ---------------------------------------------------------------------------
+// Reverse geocode using Nominatim — one call per unique city bucket (~50 km)
+// ---------------------------------------------------------------------------
+
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "FoodieRunsTheWorld/1.0" },
+      next: { revalidate: 86400 },
+    });
+    const data = await res.json();
+    const addr = data.address ?? {};
+    return addr.city ?? addr.town ?? addr.village ?? addr.county ?? "";
+  } catch {
+    return "";
+  }
+}
+
+// Round to 0.5° (~55 km) to bucket nearby places and avoid redundant calls
+function bucket(lat: number, lng: number) {
+  return `${Math.round(lat * 2) / 2},${Math.round(lng * 2) / 2}`;
 }
 
 async function fetchList(
@@ -76,7 +101,6 @@ async function fetchList(
   const res = await fetch(url, { headers: FETCH_HEADERS, cache: "no-store" });
   const text = await res.text();
 
-  // Strip Google's anti-XSS prefix: )]}'\n
   const json = text.replace(/^\)\]\}'\n/, "");
   const data = JSON.parse(json);
 
@@ -84,24 +108,38 @@ async function fetchList(
   const listName: string = inner[4] ?? "Imported list";
   const rawPlaces: unknown[] = inner[8] ?? [];
 
-  const places: ImportedPlace[] = rawPlaces
+  const parsed = rawPlaces
     .map((p: unknown) => {
       const place = p as unknown[];
       const meta = place[1] as unknown[];
       const name = place[2] as string;
       const note = (place[3] as string) ?? "";
       const coords = meta?.[5] as unknown[];
-      const lat = coords?.[2] as number | null;
-      const lng = coords?.[3] as number | null;
-
-      const mapsUrl =
-        lat && lng
-          ? `https://www.google.com/maps/place/${encodeURIComponent(name)}/@${lat},${lng},17z`
-          : "";
-
-      return { name, note, lat: lat ?? null, lng: lng ?? null, googleMapsUrl: mapsUrl };
+      const lat = (coords?.[2] as number) ?? null;
+      const lng = (coords?.[3] as number) ?? null;
+      const mapsUrl = lat && lng
+        ? `https://www.google.com/maps/place/${encodeURIComponent(name)}/@${lat},${lng},17z`
+        : "";
+      return { name, note, lat, lng, googleMapsUrl: mapsUrl };
     })
     .filter((p) => p.name);
+
+  // Reverse geocode — one Nominatim call per unique ~55 km bucket
+  const bucketCache = new Map<string, string>();
+  const uniqueBuckets = [
+    ...new Set(parsed.filter(p => p.lat && p.lng).map(p => bucket(p.lat!, p.lng!))),
+  ];
+  await Promise.all(
+    uniqueBuckets.map(async (b) => {
+      const [lat, lng] = b.split(",").map(Number);
+      bucketCache.set(b, await reverseGeocode(lat, lng));
+    })
+  );
+
+  const places: ImportedPlace[] = parsed.map((p) => ({
+    ...p,
+    city: p.lat && p.lng ? (bucketCache.get(bucket(p.lat, p.lng)) ?? "") : "",
+  }));
 
   return { listName, places };
 }
