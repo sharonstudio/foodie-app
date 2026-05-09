@@ -16,7 +16,7 @@ export interface Place {
   photoUrl: string;
   toilet: boolean | null;  // null = not specified
   price: string;           // "$" | "$$" | "$$$" | ""
-  space: string;           // "Takeaway" | "Small" | "Large" | ""
+  space: string[];         // e.g. ["regular", "outside"]
   lat: number | null;
   lng: number | null;
 }
@@ -27,25 +27,36 @@ export interface Place {
 
 const EMOJI: Record<string, string> = {
   coffee: "☕",
-  lunch: "🥐",
+  "coffee & tea": "☕",
+  "coffee & drinks": "☕",
+  lunch: "🥗",
   dinner: "🍷",
   brunch: "🍳",
   sweets: "🍰",
   breakfast: "🥞",
   bar: "🍺",
   drinks: "🍸",
+  bakery: "🥐",
+  "fast food": "🍔",
 };
 
 export function intentLabel(intent: string): string {
-  const emoji = EMOJI[intent.toLowerCase()] ?? "🍽️";
-  const label = intent.charAt(0).toUpperCase() + intent.slice(1).toLowerCase();
+  const key = intent.toLowerCase();
+  const emoji = EMOJI[key] ?? "🍽️";
+  // Title-case each word, preserve "&"
+  const label = key
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
   return `${emoji} ${label}`;
 }
 
-// Space display labels
+// Space display labels — keys must match lowercased Sheet values
 export const SPACE_LABELS: Record<string, string> = {
+  regular: "Sit-down",
+  outside: "Outside seating",
   takeaway: "Takeaway",
-  small: "Small space",
+  small: "Small & cosy",
   large: "Great for groups",
 };
 
@@ -117,6 +128,8 @@ export async function getPlaces(): Promise<Place[]> {
   const { data } = Papa.parse<Record<string, string>>(csv, {
     header: true,
     skipEmptyLines: true,
+    // Trim whitespace and BOM from header names so column lookups are reliable
+    transformHeader: (h) => h.trim().replace(/^﻿/, ""),
   });
 
   const active = data
@@ -134,9 +147,12 @@ export async function getPlaces(): Promise<Place[]> {
       note: row.note?.trim() ?? "",
       googleMapsUrl: row.google_maps_url?.trim() ?? "",
       photoUrl: toDirectImageUrl(row.photo_url?.trim() ?? ""),
-      toilet: parseToilet(row.toilet ?? ""),
+      toilet: parseToilet(row.has_toilet ?? ""),
       price: row.price?.trim() ?? "",
-      space: row.space?.trim() ?? "",
+      space: (row.space ?? "")
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean),
     }))
     .filter((p) => p.name);
 
@@ -161,7 +177,8 @@ export function getCities(places: Place[]): string[] {
 
 export function getMealIntents(places: Place[]): string[] {
   const all = places.flatMap((p) => p.mealIntents);
-  const preferred = ["coffee", "brunch", "lunch", "dinner"];
+  // Preferred order — these appear first if present in the data
+  const preferred = ["coffee & tea", "coffee", "brunch", "lunch", "dinner"];
   const rest = [...new Set(all)].filter((i) => !preferred.includes(i)).sort();
   return [...preferred.filter((i) => all.includes(i)), ...rest];
 }
@@ -173,7 +190,7 @@ export function getPrices(places: Place[]): string[] {
 }
 
 export function getSpaces(places: Place[]): string[] {
-  const order = ["takeaway", "small", "large"];
-  const found = [...new Set(places.map((p) => p.space.toLowerCase()).filter(Boolean))];
+  const order = ["regular", "outside", "takeaway", "small", "large"];
+  const found = [...new Set(places.flatMap((p) => p.space))];
   return order.filter((s) => found.includes(s));
 }

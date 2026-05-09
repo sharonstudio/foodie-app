@@ -34,7 +34,7 @@ export default function PlaceList({ places }: { places: Place[] }) {
     if (activeCity && p.city !== activeCity) return false;
     if (activeMeal && !p.mealIntents.includes(activeMeal)) return false;
     if (activePrice && p.price !== activePrice) return false;
-    if (activeSpace && p.space.toLowerCase() !== activeSpace) return false;
+    if (activeSpace && !p.space.includes(activeSpace)) return false;
     return true;
   });
 
@@ -254,18 +254,18 @@ function PlaceCard({ place }: { place: Place }) {
           </div>
 
           {/* Meta pills: price · space · toilet */}
-          {(place.price || place.space || place.toilet !== null) && (
+          {(place.price || place.space.length > 0 || place.toilet !== null) && (
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {place.price && (
                 <span className="rounded-full bg-stone-50 border border-stone-100 px-2 py-0.5 text-xs text-stone-500">
                   {place.price}
                 </span>
               )}
-              {place.space && (
-                <span className="rounded-full bg-stone-50 border border-stone-100 px-2 py-0.5 text-xs text-stone-500">
-                  {spaceLabel(place.space)}
+              {place.space.map((s) => (
+                <span key={s} className="rounded-full bg-stone-50 border border-stone-100 px-2 py-0.5 text-xs text-stone-500">
+                  {spaceLabel(s)}
                 </span>
-              )}
+              ))}
               {place.toilet === true && (
                 <span className="rounded-full bg-stone-50 border border-stone-100 px-2 py-0.5 text-xs text-stone-500">
                   🚻 Toilet
