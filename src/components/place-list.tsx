@@ -245,9 +245,6 @@ function PlaceCard({ place }: { place: Place }) {
           {/* Name + location */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h4 className="font-semibold text-stone-900">{place.name}</h4>
-            {place.neighborhood && (
-              <span className="text-xs text-stone-400">· {place.neighborhood}</span>
-            )}
             {place.city && (
               <span className="text-xs text-stone-300">· {place.city}</span>
             )}

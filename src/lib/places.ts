@@ -7,7 +7,6 @@ import Papa from "papaparse";
 export interface Place {
   name: string;
   city: string;
-  neighborhood: string;
   mealIntents: string[];
   visited: boolean;
   rating: number | null;
@@ -137,7 +136,6 @@ export async function getPlaces(): Promise<Place[]> {
     .map((row) => ({
       name: row.name?.trim() ?? "",
       city: row.city?.trim() ?? "",
-      neighborhood: row.neighborhood?.trim() ?? "",
       mealIntents: (row.meal_intent ?? "")
         .split(",")
         .map((s) => s.trim().toLowerCase())

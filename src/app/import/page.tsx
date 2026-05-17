@@ -12,21 +12,22 @@ interface ImportedPlace {
 }
 
 // Column order must match the Google Sheet exactly:
-// name · city · meal_intent · price · space · visited · toilet · rating · note · google_maps_url · active · last_updated
+// name · city · location_details · meal_intent · price · space · has_toilet · visited · rating · note · google_maps_url · active · last_updated
 const SHEET_COLUMNS = [
-  "name", "city", "meal_intent", "price", "space",
-  "visited", "toilet", "rating", "note", "google_maps_url", "active", "last_updated",
+  "name", "city", "location_details", "meal_intent", "price", "space",
+  "has_toilet", "visited", "rating", "note", "google_maps_url", "active", "last_updated",
 ];
 
 function toSheetRow(p: ImportedPlace): string {
   return [
     p.name,
     p.city,      // reverse-geocoded
+    "",          // location_details — fill in manually
     "",          // meal_intent — fill in manually
     "",          // price
     "",          // space
+    "",          // has_toilet
     "",          // visited
-    "",          // toilet
     "",          // rating
     p.note,      // note from Google Maps
     p.googleMapsUrl,
